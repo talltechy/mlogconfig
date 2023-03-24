@@ -2,6 +2,11 @@ import subprocess
 import time
 import threading
 from queue import Queue
+import sys
+
+# define Python version
+PY_VER = sys.version_info[0] * 10 + sys.version_info[1]
+
 
 def format_size(size):
     """Converts a size in bytes to a human-readable format."""
@@ -9,6 +14,7 @@ def format_size(size):
         if size < 1024:
             return f"{size:.2f} {unit}"
         size /= 1024
+
 
 def format_time(seconds):
     """Converts a time in seconds to a human-readable format."""
@@ -21,57 +27,112 @@ def format_time(seconds):
     else:
         return f"{seconds}s"
 
+
 def update_app(q, app_name):
     """Updates the specified app and reports progress to the main thread."""
+    size_output = subprocess.run(
+        ["softwareupdate", "-i", app_name], capture_output=True, text=True)
+
+    for line in size_output.stdout.splitlines():
+        if "downloaded" in line.lower():
+            total = float(line.split()[1])
+            break
+
     start_time = time.time()
-    process = subprocess.Popen(["softwareupdate", "-i", app_name], stdout=subprocess.PIPE)
+    process = subprocess.Popen(
+        ["softwareupdate", "-i", app_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
     while True:
         output = process.stdout.read(1024)
+
         if output == b"" and process.poll() is not None:
             break
+
         if output:
             output_str = output.decode("utf-8")
+
             if "Downloaded" in output_str:
                 downloaded = float(output_str.split()[1])
-                total = float(output_str.split()[3])
                 progress = downloaded / total * 100
                 speed = downloaded / (time.time() - start_time)
                 time_remaining = (total - downloaded) / speed
                 q.put((app_name, progress, speed, time_remaining))
+
                 if q.get() == "cancel":
                     process.terminate()
+                    process.wait()
+                    q.task_done()
                     return
+
+    process.stdout.close()
+    process.stderr.close()
+    process.wait()
+    q.task_done()
+
 
 def main():
     while True:
-        updates = subprocess.run(["softwareupdate", "-l"], capture_output=True, text=True)
+        updates = subprocess.run(
+            ["softwareupdate", "-l"], capture_output=True, text=True)
+
         if "No new software available." in updates.stdout:
             print("No new updates available.")
             break
+
         for line in updates.stdout.splitlines():
             if line.startswith("*"):
                 app_name = line.split("\t")[1]
-                print(f"Do you want to update {app_name}? (y/n/s)")
-                response = input()
+
+                response = input(
+                    f"Do you want to update {app_name}? (y/n/s)\n")
+
                 if response.lower() == "y":
+                    size_output = subprocess.run(
+                        ["softwareupdate", "-i", app_name], capture_output=True, text=True)
+
+                    for line in size_output.stdout.splitlines():
+                        if "downloaded" in line.lower():
+                            total = float(line.split()[1])
+                            break
+
                     print(f"Updating {app_name}...")
                     q = Queue()
-                    thread = threading.Thread(target=update_app, args=(q, app_name))
+                    thread = threading.Thread(
+                        target=update_app, args=(q, app_name))
                     thread.start()
                     while thread.is_alive():
                         try:
-                            app_name, progress, speed, time_remaining = q.get(timeout=0.1)
+                            app_name, progress, speed, time_remaining = q.get(
+                                timeout=0.1)
+
                             print(f"Downloaded: {format_size(progress/100*total)} / {format_size(total)} "
                                   f"({progress:.1f}%)  Speed: {format_size(speed)}/s  "
                                   f"Time remaining: {format_time(time_remaining)}")
+
                         except:
                             pass
-                        if input("Do you want to cancel this update? (y/n)").lower() == "y":
+
+                        cancel = input(
+                            f"Do you want to cancel the update for {app_name}? (y/n)\n")
+
+                        if cancel.lower() == "y":
                             q.put("cancel")
                             thread.join()
                             print(f"Update for {app_name} cancelled.")
                             break
-                    if not thread.is_alive():
-                        print(f"{app_name} updated successfully!")
+
+                    q.join()
+
                 elif response.lower() == "s":
-                   
+                    break
+
+                else:
+                    continue
+
+
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
+    raise ValueError(
+        "Python version 3.7 or higher is required to run this script.")
+
+if __name__ == "__main__":
+    main()
