@@ -49,18 +49,23 @@ def setup_logging():
                 sys.exit(1)
 
 
+def sanitize_input(input_string):
+    return input_string.strip()
+
 def is_valid_directory(directory):
-    if not os.path.isdir(directory):
+    sanitized_dir = sanitize_input(directory)
+    if not os.path.isdir(sanitized_dir):
         print("Invalid directory. Please enter a valid directory.")
-        return False
-    return True
+        return False, sanitized_dir
+    return True, sanitized_dir
 
 def is_valid_extension(extension):
+    sanitized_ext = sanitize_input(extension)
     extension_pattern = r'^\.\w+$'
-    if not re.match(extension_pattern, extension):
+    if not re.match(extension_pattern, sanitized_ext):
         print("Invalid file extension. Please enter a valid file extension.")
-        return False
-    return True
+        return False, sanitized_ext
+    return True, sanitized_ext
 
 def add_dot_if_needed(extension):
     if not extension.startswith('.'):
@@ -68,17 +73,17 @@ def add_dot_if_needed(extension):
     return extension
 
 def get_user_input():
-    startdir = input("Enter start directory: ")
-    while not is_valid_directory(startdir):
-        startdir = input("Enter start directory: ")
+    is_valid, startdir = is_valid_directory(input("Enter start directory: "))
+    while not is_valid:
+        is_valid, startdir = is_valid_directory(input("Enter start directory: "))
 
-    old_extension = add_dot_if_needed(input('Enter file extension to rename: '))
-    while not is_valid_extension(old_extension):
-        old_extension = add_dot_if_needed(input('Enter file extension to rename: '))
+    is_valid, old_extension = is_valid_extension(add_dot_if_needed(input('Enter file extension to rename: ')))
+    while not is_valid:
+        is_valid, old_extension = is_valid_extension(add_dot_if_needed(input('Enter file extension to rename: ')))
 
-    new_extension = add_dot_if_needed(input("Enter new file extension: "))
-    while not is_valid_extension(new_extension):
-        new_extension = add_dot_if_needed(input("Enter new file extension: "))
+    is_valid, new_extension = is_valid_extension(add_dot_if_needed(input("Enter new file extension: ")))
+    while not is_valid:
+        is_valid, new_extension = is_valid_extension(add_dot_if_needed(input("Enter new file extension: ")))
 
     ignore_default_exclusions = input("Ignore default exclusions? (yes/no): ").lower()
     while ignore_default_exclusions not in ['yes', 'no']:
@@ -86,15 +91,36 @@ def get_user_input():
 
     ignore_default_exclusions = ignore_default_exclusions == 'yes'
 
-    return startdir, old_extension, new_extension, ignore_default_exclusions
+    if not ignore_default_exclusions:
+        custom_exclusions = input("Enter your own comma-separated exclusions, or leave blank for none: ").split(',')
 
-def rename_files(startdir, old_extension, new_extension, ignore_default_exclusions):
+        if custom_exclusions != ['']:
+            overwrite_existing_exclusions = input("Overwrite existing exclusions? (yes/no): ").lower()
+            while overwrite_existing_exclusions not in ['yes', 'no']:
+                overwrite_existing_exclusions = input("Overwrite existing exclusions? (yes/no): ").lower()
+
+            overwrite_existing_exclusions = overwrite_existing_exclusions == 'yes'
+        else:
+            overwrite_existing_exclusions = False
+
+    else:
+        custom_exclusions = []
+        overwrite_existing_exclusions = False
+
+    return startdir, old_extension, new_extension, ignore_default_exclusions, custom_exclusions, overwrite_existing_exclusions
+
+def rename_files(startdir, old_extension, new_extension, ignore_default_exclusions, custom_exclusions, overwrite_existing_exclusions):
     default_exclude = [
         '.git', '.idea', 'target', '.pytest_cache', '.vscode', '__pycache__',
         'node_modules', '.DS_Store', '.svn', '.hg', 'CVS'
     ]
 
-    exclude = [] if ignore_default_exclusions else default_exclude
+    if ignore_default_exclusions:
+        exclude = []
+    elif overwrite_existing_exclusions:
+        exclude = custom_exclusions
+    else:
+        exclude = default_exclude + custom_exclusions
 
     for root, dirs, files in os.walk(startdir):
         dirs[:] = [d for d in dirs if d not in exclude]
@@ -121,12 +147,15 @@ def rename_files(startdir, old_extension, new_extension, ignore_default_exclusio
 
 def main():
     setup_logging()
-    startdir, old_extension, new_extension, ignore_default_exclusions = get_user_input()
+    startdir, old_extension, new_extension, ignore_default_exclusions, custom_exclusions, overwrite_existing_exclusions = get_user_input()
     logging.info(f"Starting directory: {startdir}")
     logging.info(f"Old file extension: {old_extension}")
     logging.info(f"New file extension: {new_extension}")
     logging.info(f"Ignore default exclusions: {ignore_default_exclusions}")
-    rename_files(startdir, old_extension, new_extension, ignore_default_exclusions)
+    logging.info(f"Custom exclusions: {custom_exclusions}")
+    logging.info(f"Overwrite existing exclusions: {overwrite_existing_exclusions}")
+    rename_files(startdir, old_extension, new_extension, ignore_default_exclusions, custom_exclusions, overwrite_existing_exclusions)
+
 
 if __name__ == "__main__":
     main()
