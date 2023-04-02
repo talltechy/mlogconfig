@@ -31,13 +31,13 @@ def setup_logging():
             pass
     elif platform.system() == 'Windows':
         try:
-            import win32evtlogutil
-            nt_event_log_handler = win32evtlogutil.NTEventLogHandler("FileRenamer")
+            nt_event_log_handler = logging.handlers.NTEventLogHandler("FileRenamer")
             nt_event_log_handler.setFormatter(formatter)
             root_logger.addHandler(nt_event_log_handler)
         except ImportError:
-            print("win32evtlogutil not found, please install it using: pip install pywin32", file=sys.stderr)
+            print("win32api not found, please install it using: pip install pywin32", file=sys.stderr)
             sys.exit(1)
+
 
 def is_valid_directory(directory):
     if not os.path.isdir(directory):
@@ -70,10 +70,21 @@ def get_user_input():
     while not is_valid_extension(new_extension):
         new_extension = add_dot_if_needed(input("Enter new file extension: "))
 
-    return startdir, old_extension, new_extension
+    ignore_default_exclusions = input("Ignore default exclusions? (yes/no): ").lower()
+    while ignore_default_exclusions not in ['yes', 'no']:
+        ignore_default_exclusions = input("Ignore default exclusions? (yes/no): ").lower()
 
-def rename_files(startdir, old_extension, new_extension):
-    exclude = ['.git', '.idea', 'target', '.pytest_cache', '.vscode', '__pycache__']
+    ignore_default_exclusions = ignore_default_exclusions == 'yes'
+
+    return startdir, old_extension, new_extension, ignore_default_exclusions
+
+def rename_files(startdir, old_extension, new_extension, ignore_default_exclusions):
+    default_exclude = [
+        '.git', '.idea', 'target', '.pytest_cache', '.vscode', '__pycache__',
+        'node_modules', '.DS_Store', '.svn', '.hg', 'CVS'
+    ]
+
+    exclude = [] if ignore_default_exclusions else default_exclude
 
     for root, dirs, files in os.walk(startdir):
         dirs[:] = [d for d in dirs if d not in exclude]
@@ -100,11 +111,12 @@ def rename_files(startdir, old_extension, new_extension):
 
 def main():
     setup_logging()
-    startdir, old_extension, new_extension = get_user_input()
+    startdir, old_extension, new_extension, ignore_default_exclusions = get_user_input()
     logging.info(f"Starting directory: {startdir}")
     logging.info(f"Old file extension: {old_extension}")
     logging.info(f"New file extension: {new_extension}")
-    rename_files(startdir, old_extension, new_extension)
+    logging.info(f"Ignore default exclusions: {ignore_default_exclusions}")
+    rename_files(startdir, old_extension, new_extension, ignore_default_exclusions)
 
 if __name__ == "__main__":
     main()
