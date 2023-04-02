@@ -1,26 +1,103 @@
-# This code renames all files ending with .pgsql to .sql, except for those in the exclude_list
-# This code is used as a part of a larger program that is used to create a database from sql files
-# The code is executed by the user, and the result is the renaming of the files in the startdir
-# The user is prompted for the startdir and exclude_list, and the code is executed on the files in the startdir
-# The user is prompted for the startdir and exclude_list, and the code is executed on the files in the startdir
-# The code is executed in the following steps:
-# 1. The user is prompted for the startdir and exclude_list
-# 2. The code iterates through all files in the startdir, and all subdirectories, except those in the exclude_list
-# 3. If the file ends with .pgsql, the file is renamed to end with .sql
-
-#!/usr/bin/env python3
 import os
-import dir_exclude
-import dir_startdir
+import re
+import logging
+import logging.handlers
+import platform
+import sys
 
-for root, dirs, files in os.walk(dir_startdir.startdir):
-    dirs[:] = [d for d in dirs if d not in dir_exclude.exclude_list]
-    for filename in files:
-        if filename.endswith('.pgsql'):
-            infilename = os.path.join(root,filename)
-            newname = infilename.replace('.pgsql', '.sql')
-            try:
-                output = os.rename(infilename, newname)
-                print(f"File renamed from {infilename} to {newname}")
-            except Exception as e:
-                print(f"Error occurred: {e}")
+def setup_logging():
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+    file_handler = logging.FileHandler('file_renamer.log')
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
+    if platform.system() == 'Linux':
+        try:
+            syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
+            syslog_handler.setFormatter(formatter)
+            root_logger.addHandler(syslog_handler)
+        except FileNotFoundError:
+            pass
+    elif platform.system() == 'Darwin':
+        try:
+            syslog_handler = logging.handlers.SysLogHandler(address='/var/run/syslog')
+            syslog_handler.setFormatter(formatter)
+            root_logger.addHandler(syslog_handler)
+        except FileNotFoundError:
+            pass
+    elif platform.system() == 'Windows':
+        try:
+            import win32evtlogutil
+            nt_event_log_handler = win32evtlogutil.NTEventLogHandler("FileRenamer")
+            nt_event_log_handler.setFormatter(formatter)
+            root_logger.addHandler(nt_event_log_handler)
+        except ImportError:
+            print("win32evtlogutil not found, please install it using: pip install pywin32", file=sys.stderr)
+            sys.exit(1)
+
+def is_valid_directory(directory):
+    if not os.path.isdir(directory):
+        print("Invalid directory. Please enter a valid directory.")
+        return False
+    return True
+
+def is_valid_extension(extension):
+    extension_pattern = r'^\.\w+$'
+    if not re.match(extension_pattern, extension):
+        print("Invalid file extension. Please enter a valid file extension.")
+        return False
+    return True
+
+def add_dot_if_needed(extension):
+    if not extension.startswith('.'):
+        extension = '.' + extension
+    return extension
+
+def get_user_input():
+    startdir = input("Enter start directory: ")
+    while not is_valid_directory(startdir):
+        startdir = input("Enter start directory: ")
+
+    old_extension = add_dot_if_needed(input('Enter file extension to rename: '))
+    while not is_valid_extension(old_extension):
+        old_extension = add_dot_if_needed(input('Enter file extension to rename: '))
+
+    new_extension = add_dot_if_needed(input("Enter new file extension: "))
+    while not is_valid_extension(new_extension):
+        new_extension = add_dot_if_needed(input("Enter new file extension: "))
+
+    return startdir, old_extension, new_extension
+
+def rename_files(startdir, old_extension, new_extension):
+    exclude = ['.git', '.idea', 'target', '.pytest_cache', '.vscode', '__pycache__']
+
+    for root, dirs, files in os.walk(startdir):
+        dirs[:] = [d for d in dirs if d not in exclude]
+        for filename in files:
+            if filename.endswith(old_extension):
+                infilename = os.path.join(root, filename)
+                newname = os.path.join(root, filename.replace(old_extension, new_extension))
+                try:
+                    os.rename(infilename, newname)
+                    message = f"Renamed file: {infilename} to {newname}"
+                    print(message)
+                    logging.info(message)
+                except OSError as e:
+                    message = f"Error occurred: {e}"
+                    print(message)
+                    logging.error(message)
+
+def main():
+    setup_logging()
+    startdir, old_extension, new_extension = get_user_input()
+    logging.info(f"Starting directory: {startdir}")
+    logging.info(f"Old file extension: {old_extension}")
+    logging.info(f"New file extension: {new_extension}")
+    rename_files(startdir, old_extension, new_extension)
+
+if __name__ == "__main__":
+    main()
