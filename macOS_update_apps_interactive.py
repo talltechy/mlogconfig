@@ -1,4 +1,3 @@
-
 import logging
 import subprocess
 import sys
@@ -18,7 +17,6 @@ def format_size(size: int) -> str:
             return f"{size:.2f} {unit}"
         size /= 1024
 
-
 def format_time(seconds: int) -> str:
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
@@ -29,10 +27,9 @@ def format_time(seconds: int) -> str:
     else:
         return f"{seconds}s"
 
-
-def update_app(q: Queue, app_name: str) -> None:
+def update_app(q: Queue, app_name: str, start_time: float) -> None:
     size_output = subprocess.run(
-        ["softwareupdate", "-i", app_name], capture_output=True, text=True)
+        ["softwareupdate\", \"-i", app_name], capture_output=True, text=True)
 
     for line in size_output.stdout.splitlines():
         if "downloaded" in line.lower():
@@ -69,38 +66,6 @@ def update_app(q: Queue, app_name: str) -> None:
     process.wait()
     q.task_done()
 
-
-def main():
-    """Main function."""
-    global start_time
-
-    app_names = ["Xcode", "macOS Big Sur"]
-    q = Queue()
-    start_time = time.time()
-
-    for app_name in app_names:
-        threading.Thread(target=update_app, args=(q, app_name)).start()
-
-    while True:
-        try:
-            app_name, progress, speed, time_remaining = q.get()
-
-            print(
-                f"Updating {app_name}... {progress:.0f}% "
-                f"({format_size(speed)}/s, {format_time(time_remaining)})", end="\r")
-        except KeyboardInterrupt:
-            q.put("cancel")
-        except EOFError:
-            sys.exit(0)
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
 def main() -> None:
     if sys.version_info < (3, 7):
         raise ValueError(
@@ -132,8 +97,9 @@ def main() -> None:
 
                     print(f"Updating {app_name}...")
                     q = Queue()
+                    start_time = time.time()
                     thread = threading.Thread(
-                        target=update_app, args=(q, app_name))
+                        target=update_app, args=(q, app_name, start_time))
                     thread.start()
                     while thread.is_alive():
                         try:
@@ -143,11 +109,11 @@ def main() -> None:
                             print(
                                 f"Downloaded: {format_size(progress/100*total)} / {format_size(total)} ({progress}%)  Speed: {format_size(speed)}/s  Time remaining: {format_time(time_remaining)}")
 
-                        except:
+                        except queue.Empty:
                             pass
 
                         cancel = input(
-                            f"Do you want to cancel the update for {app_name}? (y/n)\n")
+                            f"Do you want to cancel the update for {app_name}? (y/n)\n> ")
 
                         if cancel.lower() == "y":
                             q.put("cancel")
@@ -163,7 +129,5 @@ def main() -> None:
                 else:
                     continue
 
-
 if __name__ == "__main__":
     main()
-    
