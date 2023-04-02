@@ -1,7 +1,6 @@
 import logging
 import logging.handlers
 import os
-import re
 from logger import setup_logging
 from file_validation import is_valid_directory, is_valid_extension, get_files
 
