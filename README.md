@@ -19,3 +19,26 @@ setup_logging(log_file_path)
 
 # begin logging events
 ```
+
+### `file_validation.py`
+
+To use the `file_validation` module in other scripts you will need to import the `file_validation` module by including the following statement:
+
+```python
+import file_validation
+```
+
+You can now use the functions of the `file_validation` module in your script. For example, to check if a directory is valid, you can use the function `is_valid_directory` by calling it like this:
+
+```python
+if not file_validation.is_valid_directory(directory):
+    print('Directory is not valid')
+```
+
+Similarly, to get a list of files with a specific extension, you can use the function `get_files` by calling it like this:
+
+```python
+files = file_validation.get_files(directory, extension)
+```
+
+Make sure you also handle the exception messages raised in the `is_valid_directory` and `is_valid_extension` functions.
