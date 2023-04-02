@@ -95,13 +95,3 @@ def setup_logging(log_file_path, syslog_address=None):
         nt_event_log_handler = WIN32EventLogHandler("Application")
         nt_event_log_handler.setFormatter(formatter)
         root_logger.addHandler(nt_event_log_handler)
-
-# Sample usage of the functions
-if __name__ == '__main__':
-    log_file = 'myapp.log'
-    syslog_server = '192.168.1.10'  # Optional: replace with the IP address of your syslog server
-    setup_logging(log_file, syslog_address=syslog_server)
-    logging.info('Application started')
-    logging.warning('An error occurred')
-    logging.error('A critical error occurred')
-
