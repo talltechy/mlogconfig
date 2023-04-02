@@ -1,9 +1,4 @@
-# This code sets up the logging module for a script. It will write logs to a file, to the console, and to the system log if the platform supports it.
-# It takes a single argument, which is the path to the log file that it will write to.
-# The log file is set to log at the INFO level, so all messages logged at the INFO level or above will be written to the log file.
-# The console is set to log at the INFO level, so all messages logged at the INFO level or above will be written to the console.
-# The system log is set to log at the INFO level, so all messages logged at the INFO level or above will be written to the system log.
-# The file path is passed to the script as an argument, so it is provided by the user.
+# Description: This file contains the setup_logging function that sets up the logging for the application.
 
 import logging
 from logging import Formatter, FileHandler, StreamHandler, getLogger
