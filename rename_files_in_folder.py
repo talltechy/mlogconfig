@@ -1,9 +1,11 @@
-import os
-import re
 import logging
 import logging.handlers
+import os
 import platform
+import re
+import subprocess
 import sys
+
 
 def setup_logging():
     root_logger = logging.getLogger()
@@ -36,7 +38,15 @@ def setup_logging():
             root_logger.addHandler(nt_event_log_handler)
         except ImportError:
             print("win32api not found, please install it using: pip install pywin32", file=sys.stderr)
-            sys.exit(1)
+            user_input = input("Do you want to install the required package now? (yes/no): ").lower()
+            while user_input not in ['yes', 'no']:
+                user_input = input("Do you want to install the required package now? (yes/no): ").lower()
+
+            if user_input == 'yes':
+                subprocess.run([sys.executable, "-m", "pip", "install", "pywin32"])
+            else:
+                print("Please install the required package manually and run the script again.")
+                sys.exit(1)
 
 
 def is_valid_directory(directory):
