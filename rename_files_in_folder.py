@@ -81,6 +81,13 @@ def rename_files(startdir, old_extension, new_extension):
             if filename.endswith(old_extension):
                 infilename = os.path.join(root, filename)
                 newname = os.path.join(root, filename.replace(old_extension, new_extension))
+
+                if not os.access(infilename, os.W_OK):
+                    message = f"Permission denied to modify file: {infilename}"
+                    print(message)
+                    logging.warning(message)
+                    continue
+
                 try:
                     os.rename(infilename, newname)
                     message = f"Renamed file: {infilename} to {newname}"
