@@ -1,12 +1,18 @@
+
+import logging
 import subprocess
 import sys
 import threading
 import time
 from queue import Queue
 
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.INFO,
+)
 
 def format_size(size: int) -> str:
-    """Converts a size in bytes to a human-readable format."""
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size < 1024:
             return f"{size:.2f} {unit}"
@@ -14,7 +20,6 @@ def format_size(size: int) -> str:
 
 
 def format_time(seconds: int) -> str:
-    """Converts a time in seconds to a human-readable format."""
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     if hours > 0:
@@ -26,7 +31,6 @@ def format_time(seconds: int) -> str:
 
 
 def update_app(q: Queue, app_name: str) -> None:
-    """Updates the specified app and reports progress to the main thread."""
     size_output = subprocess.run(
         ["softwareupdate", "-i", app_name], capture_output=True, text=True)
 
@@ -35,7 +39,6 @@ def update_app(q: Queue, app_name: str) -> None:
             total = float(line.split()[1])
             break
 
-    start_time = time.time()
     process = subprocess.Popen(
         ["softwareupdate", "-i", app_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -65,6 +68,37 @@ def update_app(q: Queue, app_name: str) -> None:
     process.stderr.close()
     process.wait()
     q.task_done()
+
+
+def main():
+    """Main function."""
+    global start_time
+
+    app_names = ["Xcode", "macOS Big Sur"]
+    q = Queue()
+    start_time = time.time()
+
+    for app_name in app_names:
+        threading.Thread(target=update_app, args=(q, app_name)).start()
+
+    while True:
+        try:
+            app_name, progress, speed, time_remaining = q.get()
+
+            print(
+                f"Updating {app_name}... {progress:.0f}% "
+                f"({format_size(speed)}/s, {format_time(time_remaining)})", end="\r")
+        except KeyboardInterrupt:
+            q.put("cancel")
+        except EOFError:
+            sys.exit(0)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
 
 
 def main() -> None:
