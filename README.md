@@ -5,7 +5,7 @@
 
 ## Modules
 
-### `logger.py`
+### [logger.py](logger.py)
 
 This Python module provides a convenient way to set up logging for your applications. It configures logging to output messages to a file, console, and optionally to a syslog server (on Linux and macOS) or Windows Event Log (on Windows). The module contains two functions:
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
 This example configures logging to output messages to a file, console, and a syslog server (on Linux and macOS) or Windows Event Log (on Windows).
 
-### `file_validation.py`
+### [file_validation.py](file_validation.py)
 
 To use the `file_validation` module in other scripts you will need to import the `file_validation` module by including the following statement:
 
