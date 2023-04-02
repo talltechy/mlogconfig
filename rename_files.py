@@ -3,15 +3,9 @@ import logging.handlers
 import os
 import re
 from logger import setup_logging
+from file_validation import is_valid_directory, is_valid_extension, get_files
 
 log_file_path = 'file_renamer.log'
-
-def is_valid_directory(directory):
-    return os.path.isdir(directory)
-
-def is_valid_extension(extension):
-    extension_pattern = r'^\.[\w]+$'
-    return re.match(extension_pattern, extension)
 
 def get_user_input():
     while True:
