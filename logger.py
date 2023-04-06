@@ -10,18 +10,25 @@ except ImportError:
     NTEventLogHandler = None
 
 
-# Function to validate the log file path
 def validate_log_file(log_file_path):
+    """
+    Validate the log file path, check if the directory is writeable and
+    ask the user for the desired action if the log file exists.
+    
+    Args:
+        log_file_path (str): The path to the log file.
+    
+    Returns:
+        tuple: The FileHandler object and the updated log file path.
+    """
     retries = 3
     file_handler = None
     while retries > 0:
         try:
-            # Check if the directory can be accessed and is writeable.
             log_dir = os.path.dirname(log_file_path)
             if not os.access(log_dir, os.W_OK):
                 raise Exception(f"The directory '{log_dir}' is not writeable.")
 
-            # Check if the log file exists and if so, ask for a desired action to take
             if os.path.exists(log_file_path):
                 retries_choice = 3
                 while retries_choice > 0:
@@ -66,33 +73,29 @@ def validate_log_file(log_file_path):
     return file_handler, log_file_path
 
 
-# Function to setup logging with a file and optionally a syslog or Windows event log handler
 def setup_logging(log_file_path, console_logging=False, syslog_logging=False, windows_event_logging=False):
-    # Validate the log file path
+    """
+    Set up logging with a file handler and optionally a console, syslog or Windows event log handler.
+    
+    Args:
+        log_file_path (str): The path to the log file.
+        console_logging (bool, optional): Enable console logging. Defaults to False.
+        syslog_logging (bool, optional): Enable syslog logging. Defaults to False.
+        windows_event_logging (bool, optional): Enable Windows event logging. Defaults to False.
+    """
     file_handler, log_file_path = validate_log_file(log_file_path)
-
-    # Get the root logger
     root_logger = getLogger()
-
-    # Set the root logger level to INFO
     root_logger.setLevel(logging.INFO)
 
-    # Create a formatter to use for the handlers
     format_str = '%(asctime)s - %(levelname)s: %(message)s'
     formatter = Formatter(format_str, datefmt='%Y-%m-%d %H:%M:%S')
 
-    # Set the formatter for the file handler
     file_handler.setFormatter(formatter)
-
-    # Add the file handler to the root logger
     root_logger.addHandler(file_handler)
 
     if console_logging:
-        # Create a console handler and set the formatter
         console_handler = StreamHandler()
         console_handler.setFormatter(formatter)
-
-        # Add the console handler to the root logger
         root_logger.addHandler(console_handler)
 
     if syslog_logging and (platform.system() == 'Linux' or platform.system() == 'Darwin'):
