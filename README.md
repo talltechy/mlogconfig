@@ -1,18 +1,37 @@
-# Python Scripts
+# [logger.py](logger.py)
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/eebf57d6dea24a9f9db25f7428e88d7b)](https://app.codacy.com/gh/talltechy/Python-Scripts/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+This is a Python script for configuring logging with various handlers such as console, file, syslog, and Windows event log. The script defines two functions; validate_log_file() and setup_logging(). The validate_log_file() takes in a log file path and validates it. It checks if the directory exists, is accessible and writable, and also checks if the log file already exists. If the log file already exists, the function asks the user what to do with it; append to it, overwrite it or create a new file. If the user chooses to create a new file, the function prompts for a new path. If the user chooses to append or overwrite, the function sets up a file handler accordingly and returns it. The file handler and the log file path are returned by the function.
 
-## Modules
+The setup_logging() function takes in a log file path, boolean values of console_logging, syslog_logging, and windows_event_logging. It calls the validate_log_file() function to validate the log file path and creates a file handler. The function adds the file handler to the root logger and sets the log level to INFO. It also creates a formatter to use for all the handlers. If console_logging is True, the function creates a console handler, sets the formatter for it, and adds the handler to the root logger. If syslog_logging is True and the platform running is either Linux or Darwin, the function creates a SysLogHandler and sets the formatter for it. If windows_event_logging is True and the platform running is Windows, the function creates an NTEventLogHandler and adds it to the root logger.
 
-### [logger.py](logger.py)
+Finally, if the script is run directly (not imported as a module), it calls the setup_logging() function with default values of log_file_path, console_logging, syslog_logging, and windows_event_logging. It sets console_logging, syslog_logging, and windows_event_logging to True. The log file path is set to "./log_file.log".
 
-This Python module provides a convenient way to set up logging for your applications. It configures logging to output messages to a file, console, and optionally to a syslog server (on Linux and macOS) or Windows Event Log (on Windows). The module contains two functions:
+The module contains two functions:
 
 1. `validate_log_file(log_file_path)`: Validates and handles the provided log file path.
 2. `setup_logging(log_file_path, syslog_address=None)`: Sets up logging with a file and, if applicable, a syslog or Windows event log handler.
 
-#### Installation
+## Requirements
+
+The program requires the following:
+
+- Python 3.x
+- A valid file path for logging.
+
+## Installation
+
+To use this program, follow the steps below:
+
+1. Clone this repository
+2. Navigate to the cloned directory
+3. Run `python logger.py` with valid values for parameters.
+
+### **Parameters**
+
+- `log_file_path`: A valid file path for logging. This parameter is required.
+- `console_logging`: If True, console logging will be enabled. Defaults to False.
+- `syslog_logging`: If True and running on a Linux or MacOS system, syslog logging will be enabled. Defaults to False.
+- `windows_event_logging`: If True and running on a Windows system, Windows Event logging will be enabled. Defaults to False.
 
 1. Copy the logger.py file to your project directory.
 2. Import the setup_logging function in your main script:
@@ -21,73 +40,69 @@ This Python module provides a convenient way to set up logging for your applicat
 from logger import setup_logging
 ```
 
-#### Usage
+## Usage
 
-To use the module in your code, follow these steps:
+### Example 1
 
-1. Import the setup_logging function from the module:
-
-```python
-from logger import setup_logging
-```
-
-2. Call the setup_logging function with the desired log file path and, optionally, the address of your syslog server (for Linux and macOS) or leave it empty for Windows Event Log:
+The following code sets up logging with only a file handler, using the default log file path "./log_file.log". Console_logging, Syslog_logging, and Windows_event_logging are all set to False.
 
 ```python
-log_file = 'myapp.log'
-syslog_server = '192.168.1.10'  # Optional: replace with the IP address of your syslog server
-setup_logging(log_file, syslog_address=syslog_server)
+setup_logging("./log_file.log")
 ```
 
-3. Use the standard logging module to log messages in your application:
+### Example 2
+
+The following code sets up logging with a file handler, and also adds a console handler. In this example, console_logging is set to True, while the other two logging parameters remain False.
 
 ```python
-import logging
-
-logging.info('Application started')
-logging.warning('An error occurred')
-logging.error('A critical error occurred')
+setup_logging("./log_file.log", console_logging=True)
 ```
 
-#### Example
+### Example 3
+
+The following code sets up logging with a file handler and a syslog handler. In this example, syslog_logging is set to True, while console_logging and windows_event_logging are set to False.
+
+```python
+setup_logging("./log_file.log", syslog_logging=True)
+```
+
+### Example 4
+
+The following code sets up logging with a file handler, a console handler, and a syslog handler. In this example, all three logging parameters are set to True.
+
+```python
+setup_logging("./log_file.log", console_logging=True, syslog_logging=True)
+```
+
+### Example 5
+
+The following code sets up logging with a file handler and a Windows event log handler. In this example, windows_event_logging is set to True, while console_logging and syslog_logging are set to False.
+
+```python
+setup_logging("./log_file.log", windows_event_logging=True)
+```
+
+## Example Python Script
 
 Here's an example of how to use the module in a Python script:
 
 ```python
-from logger import setup_logging
-import logging
+import logger
 
-if __name__ == '__main__':
-    log_file = 'myapp.log'
-    syslog_server = '192.168.1.10'  # Optional: replace with the IP address of your syslog server
-    setup_logging(log_file, syslog_address=syslog_server)
+# Set up logging with file, console, syslog and Windows event log handlers
+logger.setup_logging("./log_file.log", console_logging=True, syslog_logging=True, windows_event_logging=True)
 
-    logging.info('Application started')
-    logging.warning('An error occurred')
-    logging.error('A critical error occurred')
+# Log an info message
+logger.getLogger().info("This is an info message")
+
+# Log an error message
+logger.getLogger().error("This is an error message")
 ```
 
-This example configures logging to output messages to a file, console, and a syslog server (on Linux and macOS) or Windows Event Log (on Windows).
+This will set up the logging configuration with the specified handlers, and then log an info message and an error message using the logger that was created in the `setup_logging` function. The messages will be written to the log file, displayed on the console, and sent to the syslog and Windows event log, depending on which handlers were enabled.
 
-### [file_validation.py](file_validation.py)
+## License
 
-To use the `file_validation` module in other scripts you will need to import the `file_validation` module by including the following statement:
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-```python
-import file_validation
-```
-
-You can now use the functions of the `file_validation` module in your script. For example, to check if a directory is valid, you can use the function `is_valid_directory` by calling it like this:
-
-```python
-if not file_validation.is_valid_directory(directory):
-    print('Directory is not valid')
-```
-
-Similarly, to get a list of files with a specific extension, you can use the function `get_files` by calling it like this:
-
-```python
-files = file_validation.get_files(directory, extension)
-```
-
-Make sure you also handle the exception messages raised in the `is_valid_directory` and `is_valid_extension` functions.
+[MIT License](LICENSE.md)
