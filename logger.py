@@ -1,8 +1,13 @@
 import os
 import logging
 from logging import Formatter, FileHandler, StreamHandler, getLogger
-from logging.handlers import SysLogHandler, NTEventLogHandler
+from logging.handlers import SysLogHandler
 import platform
+
+try:
+    from logging.handlers import NTEventLogHandler
+except ImportError:
+    NTEventLogHandler = None
 
 
 # Function to validate the log file path
@@ -18,24 +23,34 @@ def validate_log_file(log_file_path):
 
             # Check if the log file exists and if so, ask for a desired action to take
             if os.path.exists(log_file_path):
-                mode_map = {1: 'Append', 2: 'Overwrite', 3: 'New file'}
-                choices = [f'{i}: {c}' for i, c in mode_map.items()]
-                choice = int(input(f"The logfile '{log_file_path}' already exists. Please choose an action:\n"
-                                   f"{', '.join(choices)}\n"
-                                   "Enter the number corresponding to your choice: ").strip())
+                retries_choice = 3
+                while retries_choice > 0:
+                    mode_map = {1: 'Append', 2: 'Overwrite', 3: 'New file'}
+                    choices = [f'{i}: {c}' for i, c in mode_map.items()]
+                    choice = int(input(f"The logfile '{log_file_path}' already exists. Please choose an action:\n"
+                                       f"{', '.join(choices)}\n"
+                                       "Enter the number corresponding to your choice: ").strip())
 
-                if choice in mode_map.keys():
-                    action = mode_map[choice]
-                    if action == 'New file':
-                        new_path = input("Please enter a new path for the logfile: ")
-                        log_file_path = new_path
+                    if choice in mode_map.keys():
+                        action = mode_map[choice]
+                        if action == 'New file':
+                            new_path = input("Please enter a new path for the logfile: ")
+                            if os.path.exists(new_path):
+                                print("The new file path already exists. Please enter a new path.")
+                                retries_choice -= 1
+                                continue
+                            else:
+                                log_file_path = new_path
+                        else:
+                            mode = 'a' if action == 'Append' else 'w'
+                            file_handler = FileHandler(log_file_path, mode=mode)
+                            break
                     else:
-                        mode = 'a' if action == 'Append' else 'w'
-                        file_handler = FileHandler(log_file_path, mode=mode)
-                        break
-                else:
-                    print("Invalid choice. Please choose an action by entering a number.")
-                    continue
+                        print("Invalid choice. Please choose an action by entering a number.")
+                        retries_choice -= 1
+                if retries_choice == 0:
+                    raise Exception("Too many invalid choices.")
+                    
             else:
                 file_handler = FileHandler(log_file_path, mode='w')
                 break
@@ -90,15 +105,16 @@ def setup_logging(log_file_path, console_logging=False, syslog_logging=False, wi
             print("Syslog not available on this platform.")
 
     if windows_event_logging and platform.system() == 'Windows':
-        try:
-            nt_event_log_handler = NTEventLogHandler("Application")
-            root_logger.addHandler(nt_event_log_handler)
-        except ImportError:
+        if NTEventLogHandler is not None:
+            try:
+                nt_event_log_handler = NTEventLogHandler("Application")
+                nt_event_log_handler.setFormatter(formatter)
+                root_logger.addHandler(nt_event_log_handler)
+            except Exception as e:
+                print(f"Could not create Windows event log handler. {e}")
+                pass
+        else:
             print("NTEventLogHandler is not supported on platforms other than Windows.")
-            pass
-        except Exception as e:
-            print(f"Could not create Windows event log handler. {e}")
-            pass
 
 
 if __name__ == "__main__":
