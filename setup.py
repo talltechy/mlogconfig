@@ -11,7 +11,7 @@ setup(
     description="A simple logging setup utility that configures logging with file, console, syslog, and Windows event log handlers.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/talltechy/logger",
+    url="https://github.com/talltechy/mlogconfig",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",

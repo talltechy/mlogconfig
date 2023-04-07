@@ -13,11 +13,36 @@ from logging import Formatter, getLogger
 from logging.handlers import SysLogHandler
 
 try:
-    import win32evtlogutil
+    import win32evtlog
+    import win32event
+    import win32security
 except ImportError:
-    win32evtlogutil = None
+    win32evtlog = None
+    win32event = None
+    win32security = None
+
 
 from logging import FileHandler, StreamHandler
+
+class WindowsEventLogHandler(logging.Handler):
+    def __init__(self, appName):
+        logging.Handler.__init__(self)
+        self.appName = appName
+
+    def emit(self, record):
+        try:
+            sid = win32security.LookupAccountName("", os.environ["USERNAME"])[0]
+            win32evtlog.ReportEvent(
+                self.appName,
+                1,
+                strings=[str(record.getMessage())],
+                EventType=record.levelno,
+                EventCategory=0,
+                Sid=sid,
+            )
+        except Exception as e:
+            self.handleError(record)
+
 
 
 def validate_log_file(log_file_path, mode="a"):
@@ -106,12 +131,12 @@ def setup_logging(
     if (
         windows_event_logging
         and platform.system() == "Windows"
-        and win32evtlogutil
+        and win32evtlog
+        and win32event
     ):
-        nt_event_log_handler = win32evtlogutil.AddEventSource(
-            appName="mlogconfig", dllname=None
-        )
+        nt_event_log_handler = WindowsEventLogHandler(appName="mlogconfig")
         root_logger.addHandler(nt_event_log_handler)
+
 
 
 if __name__ == "__main__":
