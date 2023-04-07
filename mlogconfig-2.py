@@ -1,18 +1,20 @@
 import os
 import platform
 import logging
-from logging import Formatter, StreamHandler, FileHandler
+from logging import Formatter, StreamHandler, FileHandler, getLogger
 import datetime
 import sys
-import pywintypes
 
-try:
-    import win32evtlog
-    import win32security
-    import winerror
-    WIN32_AVAILABLE = True
-except ImportError:
-    WIN32_AVAILABLE = False
+WIN32_AVAILABLE = False
+if platform.system() == "Windows":
+    try:
+        import pywintypes
+        import win32evtlog
+        import win32security
+        import winerror
+        WIN32_AVAILABLE = True
+    except ImportError:
+        pass
 
 from logging.handlers import SysLogHandler
 
@@ -24,20 +26,10 @@ class EventLogException(Exception):
 
 class WindowsEventLogHandler(logging.Handler):
     def __init__(self, appName):
-        """Initialize the Windows event log handler.
-
-        Args:
-            appName (str): The application name for the event log.
-        """
         super().__init__()
         self.appName = appName
 
     def emit(self, record):
-        """Emit a log record to the Windows event log.
-
-        Args:
-            record (logging.LogRecord): The log record to emit.
-        """
         if not WIN32_AVAILABLE:
             return
 
@@ -63,26 +55,10 @@ class WindowsEventLogHandler(logging.Handler):
 
 
 def validate_log_file(log_file_path, mode="a"):
-    """
-    Validate the log file path and create a file handler for it.
-
-    Args:
-        log_file_path (str): Path to the log file.
-        mode (str, optional): File mode for the log file. Defaults to 'a'.
-    Returns:
-        tuple: File handler and the validated log file path.
-    """
     log_file_path = os.path.abspath(log_file_path)
     log_dir = os.path.dirname(log_file_path)
 
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    if not os.path.exists(log_file_path):
-        open(log_file_path, 'w').close()
-
-    if not os.path.isfile(log_file_path):
-        raise ValueError(f"'{log_file_path}' is not a valid file path.")
+    os.makedirs(log_dir, exist_ok=True)
 
     if mode not in ("a", "w", "x"):
         raise ValueError(
@@ -104,20 +80,9 @@ def setup_logging(
     windows_event_logging=False,
     log_level=logging.INFO,
 ):
-    """
-    Set up logging with a file and optionally a syslog or Windows event log handler.
-
-    Args:
-        log_file_path (str): Path to the log file.
-        error_log_file_path (str): Path to the error log file.
-        console_logging (bool, optional): Whether to enable console logging or not. Defaults to False.
-        syslog_logging (bool, optional): Whether to enable syslog logging or not. Defaults to False.
-        windows_event_logging (bool, optional): Whether to enable Windows event logging or not. Defaults to False.
-        log_level (int, optional): Logging level. Defaults to logging.INFO.
-    """
     file_handler, log_file_path = validate_log_file(log_file_path)
 
-    root_logger = logging.getLogger()
+    root_logger = getLogger()
     root_logger.setLevel(log_level)
 
     format_str = "%(asctime)s - %(levelname)s: %(message)s"
