@@ -27,14 +27,13 @@ def validate_log_file(log_file_path, mode='a'):
     :param log_file_path: Path to the log file
     :param mode: File mode for the log file, either 'a' (append), 'w' (overwrite), or 'n' (new file)
     :return: File handler and the validated log file path
+    :rtype: tuple
     """
     if mode not in ('a', 'w', 'n'):
         raise ValueError(
             "Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'n' (new file)")
 
-    retries = 3
-    file_handler = None
-    while retries > 0:
+    for _ in range(3):
         try:
             log_dir = os.path.dirname(log_file_path)
             if not os.access(log_dir, os.W_OK):
@@ -46,18 +45,13 @@ def validate_log_file(log_file_path, mode='a'):
                     f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
 
             file_handler = FileHandler(log_file_path, mode=mode)
-            break
+            return file_handler, log_file_path
 
         except (PermissionError, ValueError, FileExistsError) as error:
-            retries -= 1
             print(str(error))
-            if retries > 0:
-                log_file_path = input("Please enter a valid log file path: ")
+            log_file_path = input("Please enter a valid log file path: ")
 
-    if file_handler is None:
-        raise FileNotFoundError("Could not validate the log file path.")
-
-    return file_handler, log_file_path
+    raise FileNotFoundError("Could not validate the log file path.")
 
 
 def setup_logging(log_file_path, console_logging=False,
@@ -69,6 +63,7 @@ def setup_logging(log_file_path, console_logging=False,
     :param console_logging: Whether to enable console logging or not
     :param syslog_logging: Whether to enable syslog logging or not
     :param windows_event_logging: Whether to enable Windows event logging or not
+    :rtype: None
     """
     file_handler, log_file_path = validate_log_file(log_file_path)
 
