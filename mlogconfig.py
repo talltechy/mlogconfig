@@ -6,29 +6,38 @@ Event Log. The user can enable or disable each logging method as needed.
 """
 
 import os
+import sys
 import datetime
 import platform
 import logging
+import argparse
 from logging import Formatter, StreamHandler, FileHandler, getLogger
 from logging.handlers import SysLogHandler
-import sys
 
-WIN32_AVAILABLE = platform.system() == "Windows"
-if WIN32_AVAILABLE:
+# Standard library imports
+# ...
+
+# Third-party imports
+if platform.system() == "Windows":
     try:
         import pywintypes
         import win32evtlog
         import win32security
         import winerror
+        WINDOWS_AVAILABLE = True
     except ImportError:
-        WIN32_AVAILABLE = False
+        WINDOWS_AVAILABLE = False
+else:
+    WINDOWS_AVAILABLE = False
+
+# Local application/library specific imports
+# ...
 
 
 class EventLogException(Exception):
     """
     Custom exception for Windows event log errors.
     """
-    pass
 
 
 class WindowsEventLogHandler(logging.Handler):
@@ -41,7 +50,7 @@ class WindowsEventLogHandler(logging.Handler):
         self.app_name = app_name
 
     def emit(self, record):
-        if not WIN32_AVAILABLE:
+        if not WINDOWS_AVAILABLE:
             return
 
         try:
@@ -90,11 +99,12 @@ def setup_logging(
     syslog_logging=False,
     windows_event_logging=False,
     log_level=logging.INFO,
+    file_mode="a",
 ):
     """
     Sets up logging configuration for an application.
     """
-    file_handler, log_file_path = validate_log_file(log_file_path)
+    file_handler, log_file_path = validate_log_file(log_file_path, mode=file_mode)
 
     root_logger = getLogger()
     root_logger.setLevel(log_level)
@@ -105,13 +115,12 @@ def setup_logging(
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
-    error_file_handler, error_log_file_path = validate_log_file(error_log_file_path)
+    error_file_handler, error_log_file_path = validate_log_file(error_log_file_path, mode=file_mode)
     if os.path.abspath(log_file_path) == os.path.abspath(error_log_file_path):
         raise ValueError("log_file_path and error_log_file_path should be different.")
     error_file_handler.setFormatter(formatter)
     error_file_handler.setLevel(logging.ERROR)
     root_logger.addHandler(error_file_handler)
-
     if console_logging:
         console_handler = StreamHandler()
         console_handler.setFormatter(formatter)
@@ -131,17 +140,17 @@ def setup_logging(
         nt_event_log_handler = WindowsEventLogHandler(app_name=os.path.basename(sys.argv[0]))
         root_logger.addHandler(nt_event_log_handler)
 
-
 def main():
     """
     Main function to setup logging and handle command line arguments.
     """
-    if len(sys.argv) < 3:
-        print("Usage: python mlogconfig.py <log_file_path> <error_log_file_path>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Configurable logging setup for Python applications.")
+    parser.add_argument("log_file_path", help="Path to the log file.")
+    parser.add_argument("error_log_file_path", help="Path to the error log file.")
+    args = parser.parse_args()
 
-    log_file_path = sys.argv[1]
-    error_log_file_path = sys.argv[2]
+    log_file_path = args.log_file_path
+    error_log_file_path = args.error_log_file_path
 
     try:
         setup_logging(
@@ -158,7 +167,6 @@ def main():
                 f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ERROR: {str(error)}\n"
             )
         raise
-
 
 if __name__ == "__main__":
     main()
