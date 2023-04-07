@@ -45,7 +45,8 @@ def validate_log_file(log_file_path, mode='a'):
                     raise FileExistsError(
                         f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
                 else:
-                    open(log_file_path, 'w').close()
+                    with open(log_file_path, 'w', encoding='utf-8') as file:
+                        file.close()
                     mode = 'a'
 
             file_handler = FileHandler(log_file_path, mode=mode)
@@ -105,6 +106,7 @@ def setup_logging(log_file_path, console_logging=False,
         else:
             print("NTEventLogHandler is not supported on platforms other than Windows.")
 
-    if __name__ == "__main__":
-        setup_logging("./log_file.log", console_logging=True,
-                      syslog_logging=True, windows_event_logging=True)
+
+if __name__ == "__main__":
+    setup_logging("./log_file.log", console_logging=True,
+                  syslog_logging=True, windows_event_logging=True)
