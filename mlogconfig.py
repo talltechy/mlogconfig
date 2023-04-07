@@ -1,3 +1,10 @@
+"""
+This module provides a configurable logging setup for Python applications.
+
+It supports logging to console, file, syslog (for Linux and macOS), and Windows
+Event Log. The user can enable or disable each logging method as needed.
+"""
+
 import os
 import platform
 import logging
@@ -17,11 +24,17 @@ if WIN32_AVAILABLE:
 
 
 class EventLogException(Exception):
-    """Custom exception for Windows event log errors."""
+    """
+    Custom exception for Windows event log errors.
+    """
     pass
 
 
 class WindowsEventLogHandler(logging.Handler):
+    """
+    Handler for logging messages to the Windows Event Log.
+    """
+
     def __init__(self, appName):
         super().__init__()
         self.appName = appName
@@ -52,6 +65,9 @@ class WindowsEventLogHandler(logging.Handler):
 
 
 def validate_log_file(log_file_path, mode="a"):
+    """
+    Validates the log file path and returns a FileHandler instance and the absolute log file path.
+    """
     log_file_path = os.path.abspath(log_file_path)
     log_dir = os.path.dirname(log_file_path)
 
@@ -77,6 +93,9 @@ def setup_logging(
     windows_event_logging=False,
     log_level=logging.INFO,
 ):
+    """
+    Sets up logging configuration for an application.
+    """
     file_handler, log_file_path = validate_log_file(log_file_path)
 
     root_logger = getLogger()
@@ -116,6 +135,9 @@ def setup_logging(
 
 
 def main():
+    """
+    Main function to setup logging and handle command line arguments.
+    """
     if len(sys.argv) < 3:
         print("Usage: python mlogconfig.py <log_file_path> <error_log_file_path>")
         sys.exit(1)
