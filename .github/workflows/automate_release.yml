@@ -23,23 +23,27 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install build
-        python -m pip install twine
+        pip install twine
     - name: Update version number in setup.py based on the tag
       run: |
-        TAG_NAME=${GITHUB_REF#refs/tags/}
-        python -c |
+        TAG_NAME=${{ github.ref }}
+        python -c '
           import re
           import sys
-          with open('setup.py', 'rt') as f:
+          with open("setup.py", "rt") as f:
               content = f.read()
-          content = re.sub(r'version=[\"\'](.*?)[\"\']', f'version=\"{sys.argv[1]}\"', content)
-          with open('setup.py', 'wt') as f:
+          content = re.sub(
+              r"version=[\"\'](.*?)[\"\']",
+              f\'version="{sys.argv[1]}"\',
+              content,
+          )
+          with open("setup.py", "wt") as f:
               f.write(content)
-        $TAG_NAME
-      shell: /usr/bin/bash -e {0}
+        ' $TAG_NAME
+      shell: bash
       env:
-        pythonLocation: /opt/hostedtoolcache/Python/3.11.2/x64
-        LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.2/x64/lib
+        pythonLocation: /opt/hostedtoolcache/Python/3.9.7/x64
+        LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.9.7/x64/lib
     - name: Build package
       run: python -m build
     - name: Upload package to PyPI
