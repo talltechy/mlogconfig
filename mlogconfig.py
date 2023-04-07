@@ -1,84 +1,113 @@
 """
-mlogconfig.py
-A simple logging setup utility that configures logging with file,
-console, syslog, and Windows event log handlers.
+This module provides a configurable logging setup for Python applications.
+
+It supports logging to console, file, syslog (for Linux and macOS), and Windows
+Event Log. The user can enable or disable each logging method as needed.
 """
 
 import os
+import sys
+import datetime
 import platform
-import socket
 import logging
-
-from logging import Formatter, getLogger
+import argparse
+from logging import Formatter, StreamHandler, FileHandler, getLogger
 from logging.handlers import SysLogHandler
 
-try:
-    from logging.handlers import NTEventLogHandler
-except ImportError:
-    NTEventLogHandler = None
+# Standard library imports
+# ...
 
-from logging import FileHandler, StreamHandler
+# Third-party imports
+if platform.system() == "Windows":
+    try:
+        import pywintypes
+        import win32evtlog
+        import win32security
+        import winerror
+        WINDOWS_AVAILABLE = True
+    except ImportError:
+        WINDOWS_AVAILABLE = False
+else:
+    WINDOWS_AVAILABLE = False
+
+# Local application/library specific imports
+# ...
+
+
+class EventLogException(Exception):
+    """
+    Custom exception for Windows event log errors.
+    """
+
+
+class WindowsEventLogHandler(logging.Handler):
+    """
+    Handler for logging messages to the Windows Event Log.
+    """
+
+    def __init__(self, app_name):
+        super().__init__()
+        self.app_name = app_name
+
+    def emit(self, record):
+        if not WINDOWS_AVAILABLE:
+            return
+
+        try:
+            sid = win32security.LookupAccountName("", os.environ["USERNAME"])[0]
+            message = str(record.getMessage())
+            win32evtlog.ReportEvent(
+                self.app_name,
+                1,
+                0,
+                record.levelno,
+                sid,
+                [message],
+                b"",
+            )
+        except (EventLogException, pywintypes.error) as error:
+            if isinstance(error, pywintypes.error) and error.winerror == winerror.ERROR_FILE_NOT_FOUND:
+                raise FileNotFoundError(error.strerror) from None
+            else:
+                self.handleError(record)
 
 
 def validate_log_file(log_file_path, mode="a"):
     """
-    Validate the log file path and create a file handler for it.
-
-    :param log_file_path: Path to the log file
-    :param mode: File mode for the log file, either 'a' (append), 'w' (overwrite), or 'n' (new file)
-    :return: File handler and the validated log file path
-    :rtype: tuple
+    Validates the log file path and returns a FileHandler instance and the absolute log file path.
     """
-    if mode not in ("a", "w", "n"):
+    log_file_path = os.path.abspath(log_file_path)
+    log_dir = os.path.dirname(log_file_path)
+
+    os.makedirs(log_dir, exist_ok=True)
+
+    if mode not in ("a", "w", "x"):
         raise ValueError(
-            "Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'n' (new file)"
+            "Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'x' (new file)"
         )
 
-    for _ in range(3):
-        try:
-            log_dir = os.path.dirname(log_file_path)
-            if not os.access(log_dir, os.W_OK):
-                raise PermissionError(f"The directory '{log_dir}' is not writeable.")
+    if not os.access(log_dir, os.W_OK):
+        raise PermissionError(f"The directory '{log_dir}' is not writeable.")
 
-            if mode == "n":
-                if os.path.exists(log_file_path):
-                    raise FileExistsError(
-                        f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file."
-                    )
-                else:
-                    with open(log_file_path, "w", encoding="utf-8") as file:
-                        file.close()
-                    mode = "a"
-
-            file_handler = FileHandler(log_file_path, mode=mode)
-            return file_handler, log_file_path
-
-        except (PermissionError, ValueError, FileExistsError) as error:
-            print(str(error))
-            log_file_path = input("Please enter a valid log file path: ")
-
-    raise FileNotFoundError("Could not validate the log file path.")
+    return FileHandler(log_file_path, mode=mode), log_file_path
 
 
 def setup_logging(
     log_file_path,
+    error_log_file_path,
     console_logging=False,
     syslog_logging=False,
     windows_event_logging=False,
+    log_level=logging.INFO,
+    file_mode="a",
 ):
     """
-    Set up logging with a file and optionally a syslog or Windows event log handler.
-
-    :param log_file_path: Path to the log file
-    :param console_logging: Whether to enable console logging or not
-    :param syslog_logging: Whether to enable syslog logging or not
-    :param windows_event_logging: Whether to enable Windows event logging or not
-    :rtype: None
+    Sets up logging configuration for an application.
     """
-    file_handler, log_file_path = validate_log_file(log_file_path)
+    file_handler, log_file_path = validate_log_file(log_file_path, mode=file_mode)
 
     root_logger = getLogger()
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(log_level)
 
     format_str = "%(asctime)s - %(levelname)s: %(message)s"
     formatter = Formatter(format_str, datefmt="%Y-%m-%d %H:%M:%S")
@@ -86,40 +115,58 @@ def setup_logging(
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
+    error_file_handler, error_log_file_path = validate_log_file(error_log_file_path, mode=file_mode)
+    if os.path.abspath(log_file_path) == os.path.abspath(error_log_file_path):
+        raise ValueError("log_file_path and error_log_file_path should be different.")
+    error_file_handler.setFormatter(formatter)
+    error_file_handler.setLevel(logging.ERROR)
+    root_logger.addHandler(error_file_handler)
     if console_logging:
         console_handler = StreamHandler()
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
 
     if syslog_logging and (platform.system() in ("Linux", "Darwin")):
-        try:
-            syslog_address = (
-                "/dev/log" if platform.system() == "Linux" else "/var/run/syslog"
-            )
-            syslog_handler = SysLogHandler(
-                address=syslog_address, facility=SysLogHandler.LOG_USER
-            )
-            syslog_handler.setFormatter(formatter)
-            root_logger.addHandler(syslog_handler)
-        except OSError:
-            print("Syslog not available on this platform.")
+        syslog_address = (
+            "/dev/log" if platform.system() == "Linux" else "/var/run/syslog"
+        )
+        syslog_handler = SysLogHandler(
+            address=syslog_address, facility=SysLogHandler.LOG_USER
+        )
+        syslog_handler.setFormatter(formatter)
+        root_logger.addHandler(syslog_handler)
 
-    if windows_event_logging and platform.system() == "Windows":
-        if NTEventLogHandler is not None:
-            try:
-                nt_event_log_handler = NTEventLogHandler("Application")
-                nt_event_log_handler.setFormatter(formatter)
-                root_logger.addHandler(nt_event_log_handler)
-            except (socket.error, OSError, ValueError) as error:
-                print(f"Could not create Windows event log handler. {error}")
-        else:
-            print("NTEventLogHandler is not supported on platforms other than Windows.")
+    if windows_event_logging:
+        nt_event_log_handler = WindowsEventLogHandler(app_name=os.path.basename(sys.argv[0]))
+        root_logger.addHandler(nt_event_log_handler)
 
+def main():
+    """
+    Main function to setup logging and handle command line arguments.
+    """
+    parser = argparse.ArgumentParser(description="Configurable logging setup for Python applications.")
+    parser.add_argument("log_file_path", help="Path to the log file.")
+    parser.add_argument("error_log_file_path", help="Path to the error log file.")
+    args = parser.parse_args()
+
+    log_file_path = args.log_file_path
+    error_log_file_path = args.error_log_file_path
+
+    try:
+        setup_logging(
+            log_file_path,
+            error_log_file_path,
+            console_logging=True,
+            syslog_logging=True,
+            windows_event_logging=True,
+            log_level=logging.DEBUG,
+        )
+    except Exception as error:
+        with open(error_log_file_path, "a", encoding="utf-8") as error_log_file:
+            error_log_file.write(
+                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ERROR: {str(error)}\n"
+            )
+        raise
 
 if __name__ == "__main__":
-    setup_logging(
-        "./log_file.log",
-        console_logging=True,
-        syslog_logging=True,
-        windows_event_logging=True,
-    )
+    main()
