@@ -27,7 +27,15 @@ jobs:
     - name: Update version number in setup.py based on the tag
       run: |
         TAG_NAME=${GITHUB_REF#refs/tags/}
-        python -c "import re;import sys;with open('setup.py', 'rt') as f:content = f.read();content = re.sub(r'version=[\"\'](.*?)[\"\']', f'version=\"{sys.argv[1]}\"', content);with open('setup.py', 'wt') as f:f.write(content)" $TAG_NAME
+        python -c |
+          import re
+          import sys
+          with open('setup.py', 'rt') as f:
+              content = f.read()
+          content = re.sub(r'version=[\"\'](.*?)[\"\']', f'version=\"{sys.argv[1]}\"', content)
+          with open('setup.py', 'wt') as f:
+              f.write(content)
+        $TAG_NAME
       shell: /usr/bin/bash -e {0}
       env:
         pythonLocation: /opt/hostedtoolcache/Python/3.11.2/x64
