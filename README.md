@@ -3,6 +3,7 @@
 [![Pylint](https://github.com/talltechy/logger/actions/workflows/pylint.yml/badge.svg)](https://github.com/talltechy/logger/actions/workflows/pylint.yml)
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 [![Upload Python Package](https://github.com/talltechy/logger/actions/workflows/python-publish.yml/badge.svg)](https://github.com/talltechy/logger/actions/workflows/python-publish.yml)
+[![PyPI](https://img.shields.io/pypi/v/mlogconfig?label=PyPI%20Package%20Version&style=flat-square)](https://pypi.org/project/mlogconfig/)
 
 This is a Python script for configuring logging with various handlers such as console, file, syslog, and Windows event log. The script defines two functions; validate_log_file() and setup_logging(). The validate_log_file() takes in a log file path and validates it. It checks if the directory exists, is accessible and writable, and also checks if the log file already exists. If the log file already exists, the function asks the user what to do with it; append to it, overwrite it or create a new file. If the user chooses to create a new file, the function prompts for a new path. If the user chooses to append or overwrite, the function sets up a file handler accordingly and returns it. The file handler and the log file path are returned by the function.
 
@@ -16,7 +17,7 @@ The module contains two functions:
    1. 'a' - Append: In this mode, new log entries will be added to the existing log file, preserving the existing content. If the file does not exist, it will be created. This is the default mode, as it ensures that existing log data is not lost.
    2. 'w' - Overwrite: In this mode, if the log file already exists, its content will be erased, and new log entries will overwrite the previous content. If the file does not exist, it will be created. This mode is useful when you want to start a new log session and discard previous log data.
    3. 'n' - New file: In this mode, if the log file already exists, an error will be raised, prompting the user to choose a different file path for the new log file. This mode is useful when you want to create a new log file and avoid accidentally overwriting or appending to an existing log file.
-1. `setup_logging(log_file_path, syslog_address=None)`: Sets up logging with a file and, if applicable, a syslog or Windows event log handler.
+2. `setup_logging(log_file_path, syslog_address=None)`: Sets up logging with a file and, if applicable, a syslog or Windows event log handler.
 
 ## Requirements
 
