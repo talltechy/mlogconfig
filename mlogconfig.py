@@ -40,9 +40,13 @@ def validate_log_file(log_file_path, mode='a'):
                 raise PermissionError(
                     f"The directory '{log_dir}' is not writeable.")
 
-            if os.path.exists(log_file_path) and mode == 'n':
-                raise FileExistsError(
-                    f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
+            if mode == 'n':
+                if os.path.exists(log_file_path):
+                    raise FileExistsError(
+                        f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
+                else:
+                    open(log_file_path, 'w').close()
+                    mode = 'a'
 
             file_handler = FileHandler(log_file_path, mode=mode)
             return file_handler, log_file_path
@@ -84,10 +88,10 @@ def setup_logging(log_file_path, console_logging=False,
     if syslog_logging and (platform.system() in ('Linux', 'Darwin')):
         try:
             syslog_address = '/dev/log' if platform.system() == 'Linux' else '/var/run/syslog'
-            syslog_handler = SysLogHandler(address=syslog_address)
+            syslog_handler = SysLogHandler(address=syslog_address, facility=SysLogHandler.LOG_USER)
             syslog_handler.setFormatter(formatter)
             root_logger.addHandler(syslog_handler)
-        except FileNotFoundError:
+        except OSError:
             print("Syslog not available on this platform.")
 
     if windows_event_logging and platform.system() == 'Windows':
@@ -101,7 +105,6 @@ def setup_logging(log_file_path, console_logging=False,
         else:
             print("NTEventLogHandler is not supported on platforms other than Windows.")
 
-
-if __name__ == "__main__":
-    setup_logging("./log_file.log", console_logging=True,
-                  syslog_logging=True, windows_event_logging=True)
+    if __name__ == "__main__":
+        setup_logging("./log_file.log", console_logging=True,
+                      syslog_logging=True, windows_event_logging=True)
