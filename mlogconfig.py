@@ -86,7 +86,7 @@ def setup_logging(log_file_path, console_logging=False,
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
 
-    if syslog_logging and (platform.system() == 'Linux' or platform.system() == 'Darwin'):
+    if syslog_logging and (platform.system() in ('Linux', 'Darwin')):
         try:
             syslog_address = '/dev/log' if platform.system() == 'Linux' else '/var/run/syslog'
             syslog_handler = SysLogHandler(address=syslog_address)
