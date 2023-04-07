@@ -80,8 +80,7 @@ def validate_log_file(log_file_path, mode="a"):
     if not os.access(log_dir, os.W_OK):
         raise PermissionError(f"The directory '{log_dir}' is not writeable.")
 
-    file_handler = FileHandler(log_file_path, mode=mode)
-    return file_handler, log_file_path
+    return FileHandler(log_file_path, mode=mode), log_file_path
 
 
 def setup_logging(
