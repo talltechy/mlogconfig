@@ -1,25 +1,30 @@
+"""
+A simple logging setup utility that configures logging with file,
+console, syslog, and Windows event log handlers.
+"""
+
 import os
-import logging
-from logging import Formatter, FileHandler, StreamHandler, getLogger
-from logging.handlers import SysLogHandler
 import platform
+import socket
+import logging
+
+from logging import Formatter, getLogger
+from logging.handlers import SysLogHandler
 
 try:
     from logging.handlers import NTEventLogHandler
 except ImportError:
     NTEventLogHandler = None
 
+from logging import FileHandler, StreamHandler
+
 
 def validate_log_file(log_file_path):
     """
-    Validate the log file path, check if the directory is writeable and
-    ask the user for the desired action if the log file exists.
-    
-    Args:
-        log_file_path (str): The path to the log file.
-    
-    Returns:
-        tuple: The FileHandler object and the updated log file path.
+    Validate the log file path and create a file handler for it.
+
+    :param log_file_path: Path to the log file
+    :return: File handler and the validated log file path
     """
     retries = 3
     file_handler = None
@@ -27,63 +32,75 @@ def validate_log_file(log_file_path):
         try:
             log_dir = os.path.dirname(log_file_path)
             if not os.access(log_dir, os.W_OK):
-                raise Exception(f"The directory '{log_dir}' is not writeable.")
+                raise PermissionError(
+                    f"The directory '{log_dir}' is not writeable.")
 
             if os.path.exists(log_file_path):
                 retries_choice = 3
                 while retries_choice > 0:
                     mode_map = {1: 'Append', 2: 'Overwrite', 3: 'New file'}
                     choices = [f'{i}: {c}' for i, c in mode_map.items()]
-                    choice = int(input(f"The logfile '{log_file_path}' already exists. Please choose an action:\n"
-                                       f"{', '.join(choices)}\n"
-                                       "Enter the number corresponding to your choice: ").strip())
+                    choice = int(
+                        input(
+                            (f"The logfile '{log_file_path}' already exists. "
+                             "Please choose an action:\n") +
+                            f"{', '.join(choices)}\n"
+                            "Enter the number corresponding to your choice: "
+                        ).strip()
+                    )
 
-                    if choice in mode_map.keys():
+
+                    if choice in mode_map:
                         action = mode_map[choice]
                         if action == 'New file':
-                            new_path = input("Please enter a new path for the logfile: ")
+                            new_path = input(
+                                "Please enter a new path for the logfile: ")
                             if os.path.exists(new_path):
-                                print("The new file path already exists. Please enter a new path.")
+                                print(
+                                    "The new file path already exists. Please enter a new path.")
                                 retries_choice -= 1
                                 continue
                             else:
                                 log_file_path = new_path
                         else:
                             mode = 'a' if action == 'Append' else 'w'
-                            file_handler = FileHandler(log_file_path, mode=mode)
+                            file_handler = FileHandler(
+                                log_file_path, mode=mode)
                             break
                     else:
-                        print("Invalid choice. Please choose an action by entering a number.")
+                        print(
+                            "Invalid choice. Please choose an action by entering a number.")
                         retries_choice -= 1
                 if retries_choice == 0:
-                    raise Exception("Too many invalid choices.")
-                    
+                    raise ValueError("Too many invalid choices.")
+
             else:
                 file_handler = FileHandler(log_file_path, mode='w')
                 break
-        except Exception as e:
+        except (PermissionError, ValueError) as error:
             retries -= 1
-            print(str(e))
+            print(str(error))
             if retries > 0:
                 log_file_path = input("Please enter a valid log file path: ")
 
     if file_handler is None:
-        raise Exception("Could not validate the log file path.")
+        raise FileNotFoundError("Could not validate the log file path.")
 
     return file_handler, log_file_path
 
 
-def setup_logging(log_file_path, console_logging=False, syslog_logging=False, windows_event_logging=False):
+def setup_logging(log_file_path, console_logging=False,
+                  syslog_logging=False, windows_event_logging=False):
     """
-    Set up logging with a file handler and optionally a console, syslog or Windows event log handler.
-    
-    Args:
-        log_file_path (str): The path to the log file.
-        console_logging (bool, optional): Enable console logging. Defaults to False.
-        syslog_logging (bool, optional): Enable syslog logging. Defaults to False.
-        windows_event_logging (bool, optional): Enable Windows event logging. Defaults to False.
+    Set up logging with a file and optionally a syslog or Windows event log handler.
+
+    :param log_file_path: Path to the log file
+    :param console_logging: Whether to enable console logging or not
+    :param syslog_logging: Whether to enable syslog logging or not
+    :param windows_event_logging: Whether to enable Windows event logging or not
     """
     file_handler, log_file_path = validate_log_file(log_file_path)
+
     root_logger = getLogger()
     root_logger.setLevel(logging.INFO)
 
@@ -113,12 +130,12 @@ def setup_logging(log_file_path, console_logging=False, syslog_logging=False, wi
                 nt_event_log_handler = NTEventLogHandler("Application")
                 nt_event_log_handler.setFormatter(formatter)
                 root_logger.addHandler(nt_event_log_handler)
-            except Exception as e:
-                print(f"Could not create Windows event log handler. {e}")
-                pass
+            except (socket.error, OSError, ValueError) as error:
+                print(f"Could not create Windows event log handler. {error}")
         else:
             print("NTEventLogHandler is not supported on platforms other than Windows.")
 
 
 if __name__ == "__main__":
-    setup_logging("./log_file.log", console_logging=True, syslog_logging=True, windows_event_logging=True)
+    setup_logging("./log_file.log", console_logging=True,
+                  syslog_logging=True, windows_event_logging=True)
