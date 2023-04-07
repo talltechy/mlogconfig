@@ -20,13 +20,17 @@ except ImportError:
 from logging import FileHandler, StreamHandler
 
 
-def validate_log_file(log_file_path):
+def validate_log_file(log_file_path, mode='a'):
     """
     Validate the log file path and create a file handler for it.
 
     :param log_file_path: Path to the log file
+    :param mode: File mode for the log file, either 'a' (append), 'w' (overwrite), or 'n' (new file)
     :return: File handler and the validated log file path
     """
+    if mode not in ('a', 'w', 'n'):
+        raise ValueError("Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'n' (new file)")
+
     retries = 3
     file_handler = None
     while retries > 0:
@@ -36,49 +40,14 @@ def validate_log_file(log_file_path):
                 raise PermissionError(
                     f"The directory '{log_dir}' is not writeable.")
 
-            if os.path.exists(log_file_path):
-                retries_choice = 3
-                while retries_choice > 0:
-                    mode_map = {1: 'Append', 2: 'Overwrite', 3: 'New file'}
-                    choices = [f'{i}: {c}' for i, c in mode_map.items()]
-                    choice = int(
-                        input(
-                            (f"The logfile '{log_file_path}' already exists. "
-                             "Please choose an action:\n") +
-                            f"{', '.join(choices)}\n"
-                            "Enter the number corresponding to your choice: "
-                        ).strip()
-                    )
+            if os.path.exists(log_file_path) and mode == 'n':
+                raise FileExistsError(
+                    f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
 
+            file_handler = FileHandler(log_file_path, mode=mode)
+            break
 
-                    if choice in mode_map:
-                        action = mode_map[choice]
-                        if action == 'New file':
-                            new_path = input(
-                                "Please enter a new path for the logfile: ")
-                            if os.path.exists(new_path):
-                                print(
-                                    "The new file path already exists. Please enter a new path.")
-                                retries_choice -= 1
-                                continue
-                            else:
-                                log_file_path = new_path
-                        else:
-                            mode = 'a' if action == 'Append' else 'w'
-                            file_handler = FileHandler(
-                                log_file_path, mode=mode)
-                            break
-                    else:
-                        print(
-                            "Invalid choice. Please choose an action by entering a number.")
-                        retries_choice -= 1
-                if retries_choice == 0:
-                    raise ValueError("Too many invalid choices.")
-
-            else:
-                file_handler = FileHandler(log_file_path, mode='w')
-                break
-        except (PermissionError, ValueError) as error:
+        except (PermissionError, ValueError, FileExistsError) as error:
             retries -= 1
             print(str(error))
             if retries > 0:

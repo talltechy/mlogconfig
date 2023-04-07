@@ -11,8 +11,11 @@ Finally, if the script is run directly (not imported as a module), it calls the 
 
 The module contains two functions:
 
-1. `validate_log_file(log_file_path)`: Validates and handles the provided log file path.
-2. `setup_logging(log_file_path, syslog_address=None)`: Sets up logging with a file and, if applicable, a syslog or Windows event log handler.
+1. `validate_log_file(log_file_path)`: Validates and handles the provided log file path. In the `validate_log_file` function, the mode parameter refers to the mode in which the log file should be opened. You can pass the desired mode directly as a parameter to control how the log file will be opened and used. There are three possible modes:
+   1. 'a' - Append: In this mode, new log entries will be added to the existing log file, preserving the existing content. If the file does not exist, it will be created. This is the default mode, as it ensures that existing log data is not lost.
+   2. 'w' - Overwrite: In this mode, if the log file already exists, its content will be erased, and new log entries will overwrite the previous content. If the file does not exist, it will be created. This mode is useful when you want to start a new log session and discard previous log data.
+   3. 'n' - New file: In this mode, if the log file already exists, an error will be raised, prompting the user to choose a different file path for the new log file. This mode is useful when you want to create a new log file and avoid accidentally overwriting or appending to an existing log file.
+1. `setup_logging(log_file_path, syslog_address=None)`: Sets up logging with a file and, if applicable, a syslog or Windows event log handler.
 
 ## Requirements
 
@@ -85,7 +88,7 @@ The following code sets up logging with a file handler and a Windows event log h
 setup_logging("./log_file.log", windows_event_logging=True)
 ```
 
-## Example Python Script
+### Example Python Script
 
 Here's an example of how to use the module in a Python script:
 
