@@ -1,6 +1,7 @@
 # [logger.py](logger.py)
 
 [![Pylint](https://github.com/talltechy/logger/actions/workflows/pylint.yml/badge.svg)](https://github.com/talltechy/logger/actions/workflows/pylint.yml)
+[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 
 This is a Python script for configuring logging with various handlers such as console, file, syslog, and Windows event log. The script defines two functions; validate_log_file() and setup_logging(). The validate_log_file() takes in a log file path and validates it. It checks if the directory exists, is accessible and writable, and also checks if the log file already exists. If the log file already exists, the function asks the user what to do with it; append to it, overwrite it or create a new file. If the user chooses to create a new file, the function prompts for a new path. If the user chooses to append or overwrite, the function sets up a file handler accordingly and returns it. The file handler and the log file path are returned by the function.
 
