@@ -1,0 +1,42 @@
+name: Create Tag on Version Change
+
+on:
+  push:
+    branches:
+      - main  # Replace with the main branch of your repository, if different
+
+jobs:
+  check_version_and_tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+
+      - name: Get current version from setup.py
+        id: get_version
+        run: |
+          VERSION=$(python -c "import re; from setuptools import setup, find_packages; exec(open('setup.py').read()); print(version)")
+          echo "Current version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "::set-output name=version::$VERSION"
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          TAG_EXISTS=$(git ls-remote --tags origin | grep -q "refs/tags/v${{ steps.get_version.outputs.version }}" && echo "true" || echo "false")
+          echo "Tag exists: $TAG_EXISTS"
+          echo "::set-output name=tag_exists::$TAG_EXISTS"
+
+      - name: Create and push new tag
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "noreply@github.com"
+          git tag -a "v${{ steps.get_version.outputs.version }}" -m "Version ${{ steps.get_version.outputs.version }}"
+          git push --tags
