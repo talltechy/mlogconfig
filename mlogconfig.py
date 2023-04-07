@@ -1,4 +1,5 @@
 """
+mlogconfig.py
 A simple logging setup utility that configures logging with file,
 console, syslog, and Windows event log handlers.
 """

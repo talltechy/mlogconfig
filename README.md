@@ -1,4 +1,4 @@
-# [logger.py](logger.py)
+# [mlogconfig.py](mlogconfig.py)
 
 [![Pylint](https://github.com/talltechy/logger/actions/workflows/pylint.yml/badge.svg)](https://github.com/talltechy/logger/actions/workflows/pylint.yml)
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
@@ -27,7 +27,7 @@ To use this program, follow the steps below:
 
 1. Clone this repository
 2. Navigate to the cloned directory
-3. Run `python logger.py` with valid values for parameters.
+3. Run `python mlogconfig.py` with valid values for parameters.
 
 ### **Parameters**
 
@@ -36,11 +36,11 @@ To use this program, follow the steps below:
 - `syslog_logging`: If True and running on a Linux or MacOS system, syslog logging will be enabled. Defaults to False.
 - `windows_event_logging`: If True and running on a Windows system, Windows Event logging will be enabled. Defaults to False.
 
-1. Copy the logger.py file to your project directory.
+1. Copy the mlogconfig.py file to your project directory.
 2. Import the setup_logging function in your main script:
 
 ```python
-from logger import setup_logging
+from mlogconfig import setup_logging
 ```
 
 ## Usage
@@ -90,16 +90,16 @@ setup_logging("./log_file.log", windows_event_logging=True)
 Here's an example of how to use the module in a Python script:
 
 ```python
-import logger
+import mlogconfig
 
 # Set up logging with file, console, syslog and Windows event log handlers
-logger.setup_logging("./log_file.log", console_logging=True, syslog_logging=True, windows_event_logging=True)
+mlogconfig.setup_logging("./log_file.log", console_logging=True, syslog_logging=True, windows_event_logging=True)
 
 # Log an info message
-logger.getLogger().info("This is an info message")
+mlogconfig.getLogger().info("This is an info message")
 
 # Log an error message
-logger.getLogger().error("This is an error message")
+mlogconfig.getLogger().error("This is an error message")
 ```
 
 This will set up the logging configuration with the specified handlers, and then log an info message and an error message using the logger that was created in the `setup_logging` function. The messages will be written to the log file, displayed on the console, and sent to the syslog and Windows event log, depending on which handlers were enabled.
