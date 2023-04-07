@@ -13,9 +13,9 @@ from logging import Formatter, getLogger
 from logging.handlers import SysLogHandler
 
 try:
-    from logging.handlers import NTEventLogHandler
+    import win32evtlogutil
 except ImportError:
-    NTEventLogHandler = None
+    win32evtlogutil = None
 
 from logging import FileHandler, StreamHandler
 
@@ -103,9 +103,14 @@ def setup_logging(
         syslog_handler.setFormatter(formatter)
         root_logger.addHandler(syslog_handler)
 
-    if windows_event_logging and platform.system() == "Windows" and NTEventLogHandler:
-        nt_event_log_handler = NTEventLogHandler("Application")
-        nt_event_log_handler.setFormatter(formatter)
+    if (
+        windows_event_logging
+        and platform.system() == "Windows"
+        and win32evtlogutil
+    ):
+        nt_event_log_handler = win32evtlogutil.AddEventSource(
+            appName="mlogconfig", dllname=None
+        )
         root_logger.addHandler(nt_event_log_handler)
 
 
