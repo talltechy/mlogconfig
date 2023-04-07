@@ -29,7 +29,8 @@ def validate_log_file(log_file_path, mode='a'):
     :return: File handler and the validated log file path
     """
     if mode not in ('a', 'w', 'n'):
-        raise ValueError("Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'n' (new file)")
+        raise ValueError(
+            "Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'n' (new file)")
 
     retries = 3
     file_handler = None
@@ -42,7 +43,7 @@ def validate_log_file(log_file_path, mode='a'):
 
             if os.path.exists(log_file_path) and mode == 'n':
                 raise FileExistsError(
-                    f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
+f"The logfile '{log_file_path}' already exists. Please choose a different path for the new file.")
 
             file_handler = FileHandler(log_file_path, mode=mode)
             break
