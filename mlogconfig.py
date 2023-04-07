@@ -6,6 +6,7 @@ Event Log. The user can enable or disable each logging method as needed.
 """
 
 import os
+import datetime
 import platform
 import logging
 from logging import Formatter, StreamHandler, FileHandler, getLogger
@@ -35,9 +36,9 @@ class WindowsEventLogHandler(logging.Handler):
     Handler for logging messages to the Windows Event Log.
     """
 
-    def __init__(self, appName):
+    def __init__(self, app_name):
         super().__init__()
-        self.appName = appName
+        self.app_name = app_name
 
     def emit(self, record):
         if not WIN32_AVAILABLE:
@@ -47,7 +48,7 @@ class WindowsEventLogHandler(logging.Handler):
             sid = win32security.LookupAccountName("", os.environ["USERNAME"])[0]
             message = str(record.getMessage())
             win32evtlog.ReportEvent(
-                self.appName,
+                self.app_name,
                 1,
                 0,
                 record.levelno,
@@ -55,13 +56,11 @@ class WindowsEventLogHandler(logging.Handler):
                 [message],
                 b"",
             )
-        except (EventLogException, pywintypes.error) as e:
-            if isinstance(e, pywintypes.error) and e.winerror == winerror.ERROR_FILE_NOT_FOUND:
-                raise FileNotFoundError(e.strerror) from None
+        except (EventLogException, pywintypes.error) as error:
+            if isinstance(error, pywintypes.error) and error.winerror == winerror.ERROR_FILE_NOT_FOUND:
+                raise FileNotFoundError(error.strerror) from None
             else:
                 self.handleError(record)
-        except Exception:
-            self.handleError(record)
 
 
 def validate_log_file(log_file_path, mode="a"):
@@ -130,7 +129,7 @@ def setup_logging(
         root_logger.addHandler(syslog_handler)
 
     if windows_event_logging:
-        nt_event_log_handler = WindowsEventLogHandler(appName="mlogconfig")
+        nt_event_log_handler = WindowsEventLogHandler(app_name=os.path.basename(sys.argv[0]))
         root_logger.addHandler(nt_event_log_handler)
 
 
@@ -154,10 +153,10 @@ def main():
             windows_event_logging=True,
             log_level=logging.DEBUG,
         )
-    except Exception as e:
+    except Exception as error:
         with open(error_log_file_path, "a", encoding="utf-8") as error_log_file:
             error_log_file.write(
-                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ERROR: {str(e)}\n"
+                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ERROR: {str(error)}\n"
             )
         raise
 
