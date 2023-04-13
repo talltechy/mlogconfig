@@ -14,6 +14,8 @@ import logging
 import argparse
 from logging import Formatter, StreamHandler, FileHandler, getLogger
 from logging.handlers import SysLogHandler
+from typing import Tuple, Union
+
 
 # Third-party imports
 # The following imports are required for Windows Event Log support.
@@ -46,22 +48,34 @@ class WindowsEventLogHandler(logging.Handler):
     Handler for logging messages to the Windows Event Log.
     """
 
-    def __init__(self, app_name):
+    def __init__(self, app_name: str):
         super().__init__()
         self.app_name = app_name
 
-    def emit(self, record):
+    def _logging_level_to_windows_event_type(self, level: int) -> int:
+        """
+        Maps the logging level to the corresponding Windows event type.
+        """
+        if level >= logging.ERROR:
+            return win32evtlog.EVENTLOG_ERROR_TYPE
+        elif level >= logging.WARNING:
+            return win32evtlog.EVENTLOG_WARNING_TYPE
+        else:
+            return win32evtlog.EVENTLOG_INFORMATION_TYPE
+
+    def emit(self, record: logging.LogRecord) -> None:
         if not WINDOWS_AVAILABLE:
             return
 
         try:
             sid = win32security.LookupAccountName("", os.environ["USERNAME"])[0]
             message = str(record.getMessage())
+            event_type = self._logging_level_to_windows_event_type(record.levelno)
             win32evtlog.ReportEvent(
                 self.app_name,
                 1,
                 0,
-                record.levelno,
+                event_type,
                 sid,
                 [message],
                 b"",
@@ -73,10 +87,12 @@ class WindowsEventLogHandler(logging.Handler):
                 self.handleError(record)
 
 
-def validate_log_file(log_file_path, mode="a"):
+
+def validate_log_file(log_file_path: str, mode: str = "a") -> Tuple[FileHandler, str]:
     """
     Validates the log file path and returns a FileHandler instance and the absolute log file path.
     """
+    
     log_file_path = os.path.abspath(log_file_path)
     log_dir = os.path.dirname(log_file_path)
 
@@ -88,20 +104,20 @@ def validate_log_file(log_file_path, mode="a"):
         )
 
     if not os.access(log_dir, os.W_OK):
-        raise PermissionError(f"The directory '{log_dir}' is not writeable.")
+        raise PermissionError(f"The directory {log_dir!r} is not writeable.")
 
     return FileHandler(log_file_path, mode=mode), log_file_path
 
 
 def setup_logging(
-    log_file_path,
-    error_log_file_path,
-    console_logging=False,
-    syslog_logging=False,
-    windows_event_logging=False,
-    log_level=logging.INFO,
-    file_mode="a",
-):
+    log_file_path: str,
+    error_log_file_path: str,
+    console_logging: bool = False,
+    syslog_logging: bool = False,
+    windows_event_logging: bool = False,
+    log_level: Union[int, str] = logging.INFO,
+    file_mode: str = "a",
+) -> None:
     """
     Sets up logging configuration for an application.
     """
@@ -141,7 +157,7 @@ def setup_logging(
         nt_event_log_handler = WindowsEventLogHandler(app_name=os.path.basename(sys.argv[0]))
         root_logger.addHandler(nt_event_log_handler)
 
-def main():
+def main() -> None:
     """
     Main function to setup logging and handle command line arguments.
     """
@@ -165,7 +181,7 @@ def main():
     except Exception as error:
         with open(error_log_file_path, "a", encoding="utf-8") as error_log_file:
             error_log_file.write(
-                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ERROR: {str(error)}\n"
+                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - ERROR: {error}\n"
             )
         raise
 

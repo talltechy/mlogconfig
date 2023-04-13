@@ -1,3 +1,10 @@
+"""
+A setuptools-based setup module for mlogconfig.
+
+mlogconfig is a simple logging setup utility that configures logging with file,
+console, syslog, and Windows event log handlers.
+"""
+
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -5,7 +12,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="mlogconfig",
-    version="0.2.1",
+    version="0.2.2",
     author="Matt Wyen",
     author_email="matt@mattwyen.me",
     description="A simple logging setup utility that configures logging with file, console, syslog, and Windows event log handlers.",
@@ -26,6 +33,6 @@ setup(
     ],
     python_requires=">=3.9",
     install_requires=[
-        # Add any package dependencies here, if needed
+        "pywin32; sys_platform=='win32'",
     ],
 )
