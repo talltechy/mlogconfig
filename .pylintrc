@@ -1,0 +1,2 @@
+[MASTER]
+extension-pkg-whitelist=pywintypes,win32evtlog,win32security,winerror

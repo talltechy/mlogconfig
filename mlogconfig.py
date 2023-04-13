@@ -5,6 +5,7 @@ It supports logging to console, file, syslog (for Linux and macOS), and Windows
 Event Log. The user can enable or disable each logging method as needed.
 """
 
+# Standard library imports
 import os
 import sys
 import datetime
@@ -14,10 +15,9 @@ import argparse
 from logging import Formatter, StreamHandler, FileHandler, getLogger
 from logging.handlers import SysLogHandler
 
-# Standard library imports
-# ...
-
 # Third-party imports
+# The following imports are required for Windows Event Log support.
+# If you see an import error in Pylance, it can be safely ignored.
 if platform.system() == "Windows":
     try:
         import pywintypes
@@ -32,6 +32,7 @@ else:
 
 # Local application/library specific imports
 # ...
+
 
 
 class EventLogException(Exception):
