@@ -15,7 +15,7 @@ This module provides a configurable logging setup for Python applications. It su
 
 ## Requirements
 
-- Python 3.6 or higher
+- Python 3.9 or higher
 
 For Windows Event Log support, the following packages are required:
 
