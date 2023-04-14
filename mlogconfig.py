@@ -71,9 +71,10 @@ class WindowsEventLogHandler(logging.Handler):
             sid = win32security.LookupAccountName("", os.environ["USERNAME"])[0]
             message = str(record.getMessage())
             event_type = self._logging_level_to_windows_event_type(record.levelno)
+            event_id = 1  # Change this to the desired Event ID
             win32evtlog.ReportEvent(
                 self.app_name,
-                1,
+                event_id,  # Replace the second argument with the Event ID
                 0,
                 event_type,
                 sid,
