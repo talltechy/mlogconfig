@@ -3,7 +3,6 @@ A script to extract the version number from a setup.py file.
 """
 
 import re
-import codecs
 
 def read_setup_py(file_path):
     """
@@ -15,7 +14,7 @@ def read_setup_py(file_path):
     Returns:
         str: Content of the setup.py file.
     """
-    with codecs.open(file_path, "r", "utf-8") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
 def extract_version(setup_py_content):
@@ -28,7 +27,8 @@ def extract_version(setup_py_content):
     Returns:
         str: Version number if found, else 'Version not found'.
     """
-    match = re.search(r"version=['\"](.+?)['\"]", setup_py_content)
+    pattern = re.compile(r"version=['\"](.+?)['\"]")
+    match = pattern.search(setup_py_content)
 
     if match:
         return match.group(1)
