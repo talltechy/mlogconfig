@@ -15,10 +15,8 @@ def validate_log_file(file_path: str, mode: str = "a") -> Tuple[FileHandler, str
     file_path = os.path.realpath(file_path)
     file_dir = os.path.dirname(file_path)
 
-    try:
-        os.mkdir(file_dir)
-    except FileExistsError:
-        pass
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
 
     if mode not in ("a", "w", "x"):
         raise ValueError(
