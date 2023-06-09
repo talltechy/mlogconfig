@@ -11,31 +11,10 @@ import datetime
 import platform
 import logging
 import argparse
-from logging import Formatter, StreamHandler, FileHandler, getLogger
+from logging import Formatter, StreamHandler, getLogger
 from logging.handlers import SysLogHandler
-from typing import Tuple, Union
-
-
-def validate_log_file(log_file_path: str, mode: str = "a") -> Tuple[FileHandler, str]:
-    """
-    Validates the log file path and returns a FileHandler instance and the absolute log file path.
-    """
-
-    log_file_path = os.path.abspath(log_file_path)
-    log_dir = os.path.dirname(log_file_path)
-
-    os.makedirs(log_dir, exist_ok=True)
-
-    if mode not in ("a", "w", "x"):
-        raise ValueError(
-            "Invalid mode. Mode should be 'a' (append), 'w' (overwrite), or 'x' (new file)"
-        )
-
-    if not os.access(log_dir, os.W_OK):
-        raise PermissionError(f"The directory {log_dir!r} is not writeable.")
-
-    return FileHandler(log_file_path, mode=mode), log_file_path
-
+from typing import Union
+from modules.validate import validate_log_file
 
 def setup_logging(
     log_file_path: str,
