@@ -14,7 +14,7 @@ import argparse
 from logging import Formatter, StreamHandler, getLogger
 from logging.handlers import SysLogHandler
 from typing import Union
-from modules.validate import validate_file
+from .modules.validate import validate_file
 
 def setup_logging(
     file_path: str,
