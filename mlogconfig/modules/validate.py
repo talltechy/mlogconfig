@@ -7,7 +7,7 @@ from logging import FileHandler
 from typing import Tuple
 
 
-def validate_log_file(file_path: str, mode: str = "a") -> Tuple[FileHandler, str]:
+def validate_file(file_path: str, mode: str = "a") -> Tuple[FileHandler, str]:
     """
     Validates the file path and returns a FileHandler instance and the absolute log file path.
     """

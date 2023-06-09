@@ -14,10 +14,10 @@ import argparse
 from logging import Formatter, StreamHandler, getLogger
 from logging.handlers import SysLogHandler
 from typing import Union
-from modules.validate import validate_log_file
+from modules.validate import validate_file
 
 def setup_logging(
-    log_file_path: str,
+    file_path: str,
     error_log_file_path: str,
     console_logging: bool = False,
     syslog_logging: bool = False,
@@ -27,7 +27,7 @@ def setup_logging(
     """
     Sets up logging configuration for an application.
     """
-    file_handler, log_file_path = validate_log_file(log_file_path, mode=file_mode)
+    file_handler, file_path = validate_file(file_path, mode=file_mode)
 
     root_logger = getLogger()
     root_logger.setLevel(log_level)
@@ -38,11 +38,11 @@ def setup_logging(
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
-    error_file_handler, error_log_file_path = validate_log_file(
+    error_file_handler, error_log_file_path = validate_file(
         error_log_file_path, mode=file_mode
     )
-    if os.path.abspath(log_file_path) == os.path.abspath(error_log_file_path):
-        raise ValueError("log_file_path and error_log_file_path should be different.")
+    if os.path.abspath(file_path) == os.path.abspath(error_log_file_path):
+        raise ValueError("file_path and error_log_file_path should be different.")
     error_file_handler.setFormatter(formatter)
     error_file_handler.setLevel(logging.ERROR)
     root_logger.addHandler(error_file_handler)
@@ -69,16 +69,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Configurable logging setup for Python applications."
     )
-    parser.add_argument("log_file_path", help="Path to the log file.")
+    parser.add_argument("file_path", help="Path to the log file.")
     parser.add_argument("error_log_file_path", help="Path to the error log file.")
     args = parser.parse_args()
 
-    log_file_path = args.log_file_path
+    file_path = args.log_file_path
     error_log_file_path = args.error_log_file_path
 
     try:
         setup_logging(
-            log_file_path,
+            file_path,
             error_log_file_path,
             console_logging=True,
             syslog_logging=True,
