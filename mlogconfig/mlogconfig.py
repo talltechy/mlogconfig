@@ -26,6 +26,13 @@ def setup_logging(
 ) -> None:
     """
     Sets up logging configuration for an application.
+
+    :param file_path: Path to the log file.
+    :param error_log_file_path: Path to the error log file.
+    :param console_logging: Whether to enable logging to console.
+    :param syslog_logging: Whether to enable logging to syslog.
+    :param log_level: Logging level to use.
+    :param file_mode: File mode to use when opening log files.
     """
     file_handler, file_path = validate_file(file_path, mode=file_mode)
 
