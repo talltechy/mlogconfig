@@ -1,10 +1,11 @@
 name: Publish to PyPI
 
 on:
-  workflow_run:
-    workflows: ["setup-version-change"]
-    types:
-      - completed
+  release:
+    types: [published]
+
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name }}
 
 jobs:
   build-n-publish:
