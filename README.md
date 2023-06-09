@@ -1,8 +1,8 @@
 # [mlogconfig.py](mlogconfig.py)
 
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
-[![Upload Python Package](https://github.com/talltechy/mlogconfig/actions/workflows/python-publish.yml/badge.svg)](https://github.com/talltechy/mlogconfig/actions/workflows/python-publish.yml)
-[![PyPI](https://img.shields.io/pypi/v/mlogconfig?label=PyPI%20Package%20Version&style=flat-square)](https://pypi.org/project/mlogconfig/)
+[![PyPI](https://img.shields.io/pypi/v/mlogconfig?label=PyPI%20Package%20Version)](https://pypi.org/project/mlogconfig/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/mlogconfig?color=blue)
 [![CodeQL](https://github.com/talltechy/mlogconfig/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/talltechy/mlogconfig/actions/workflows/github-code-scanning/codeql)
 
 This module provides a configurable logging setup for Python applications. It supports logging to console, file, syslog (for Linux and macOS), and Windows Event Log. The user can enable or disable each logging method as needed.
