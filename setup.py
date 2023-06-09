@@ -12,7 +12,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="mlogconfig",
-    version="0.2.2",
+    version="0.2.3",
     author="Matt Wyen",
     author_email="matt@mattwyen.me",
     description="A simple logging setup utility that configures logging with file, console, syslog, and Windows event log handlers.",
