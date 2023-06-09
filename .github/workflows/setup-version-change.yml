@@ -42,4 +42,4 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "noreply@github.com"
           git tag -a "v${{ steps.get_version.outputs.version }}" -m "Version ${{ steps.get_version.outputs.version }}"
-          git push --tags
+          git push origin "v${{ steps.get_version.outputs.version }}"
